@@ -222,8 +222,7 @@ generate_grub_efi_boot() {
     mkfs.vfat -F12 -S 512 -n "grub_uefi" "$GRUB_DIR/efiboot.img" >/dev/null 2>&1
 
     GRUB_EFI_TMPDIR="$(mktemp --tmpdir="$HOME" -d)"
-    LOOP_DEVICE="$(losetup --show --find "${GRUB_DIR}"/efiboot.img)"
-    mount -o rw,flush -t vfat "${LOOP_DEVICE}" "${GRUB_EFI_TMPDIR}" >/dev/null 2>&1
+    mount -o loop,rw,flush -t vfat "${GRUB_DIR}/efiboot.img" "${GRUB_EFI_TMPDIR}" >/dev/null 2>&1
 
     cp -a "$IMAGEDIR"/boot "$VOIDHOSTDIR"
     xbps-uchroot "$VOIDHOSTDIR" grub-mkstandalone -- \
@@ -233,7 +232,6 @@ generate_grub_efi_boot() {
 		 "boot/grub/grub.cfg"
     if [ $? -ne 0 ]; then
         umount "$GRUB_EFI_TMPDIR"
-        losetup --detach "${LOOP_DEVICE}"
         die "Failed to generate EFI loader"
     fi
     mkdir -p "${GRUB_EFI_TMPDIR}"/EFI/BOOT
@@ -245,12 +243,10 @@ generate_grub_efi_boot() {
 		 "boot/grub/grub.cfg"
     if [ $? -ne 0 ]; then
         umount "$GRUB_EFI_TMPDIR"
-        losetup --detach "${LOOP_DEVICE}"
         die "Failed to generate EFI loader"
     fi
     cp -f "$VOIDHOSTDIR"/tmp/bootx64.efi "${GRUB_EFI_TMPDIR}"/EFI/BOOT/BOOTX64.EFI
     umount "$GRUB_EFI_TMPDIR"
-    losetup --detach "${LOOP_DEVICE}"
     rm -rf "$GRUB_EFI_TMPDIR"
 }
 
