@@ -272,15 +272,19 @@ generate_squashfs() {
         "$VOIDHOSTDIR/LiveOS" \
         "$VOIDHOSTDIR/tmpdir"
 
-    mount --bind "$BUILDDIR/tmp" "$VOIDHOSTDIR/tmpdir"
-    mount --bind "$IMAGEDIR/LiveOS" "$VOIDHOSTDIR/LiveOS"
-    xbps-uchroot "$VOIDHOSTDIR" mksquashfs -- /tmpdir "/LiveOS/squashfs.img" \
-        -comp "${SQUASHFS_COMPRESSION}" || die "Failed to generate squashfs image"
+    xbps-uchroot \
+        -b "$BUILDDIR/tmp:/tmpdir" \
+        -b "$IMAGEDIR/LiveOS:/LiveOS" \
+        "$VOIDHOSTDIR" \
+        mksquashfs -- \
+            /tmpdir \
+            "/LiveOS/squashfs.img" \
+            -comp "${SQUASHFS_COMPRESSION}" \
+    || die "Failed to generate squashfs image"
+
     chmod 444 "$IMAGEDIR/LiveOS/squashfs.img"
 
     # Remove rootfs and temporary dirs, we don't need them anymore.
-    umount "$VOIDHOSTDIR/tmpdir"
-    umount "$VOIDHOSTDIR/LiveOS"
     rm -rf "$ROOTFS" "$BUILDDIR/tmp-rootfs" \
         "$BUILDDIR/tmp" \
         "$IMAGEDIR/LiveOS" \
