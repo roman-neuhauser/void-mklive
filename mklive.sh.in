@@ -266,14 +266,26 @@ generate_squashfs() {
     mount -o loop "$BUILDDIR/tmp/LiveOS/ext3fs.img" "$BUILDDIR/tmp-rootfs"
     cp -a "$ROOTFS"/* "$BUILDDIR"/tmp-rootfs/
     umount -f "$BUILDDIR/tmp-rootfs"
-    mkdir -p "$IMAGEDIR/LiveOS"
+    mkdir -p \
+        "$BUILDDIR/tmp" \
+        "$IMAGEDIR/LiveOS" \
+        "$VOIDHOSTDIR/LiveOS" \
+        "$VOIDHOSTDIR/tmpdir"
 
-    "$VOIDHOSTDIR"/usr/bin/mksquashfs "$BUILDDIR/tmp" "$IMAGEDIR/LiveOS/squashfs.img" \
+    mount --bind "$BUILDDIR/tmp" "$VOIDHOSTDIR/tmpdir"
+    mount --bind "$IMAGEDIR/LiveOS" "$VOIDHOSTDIR/LiveOS"
+    xbps-uchroot "$VOIDHOSTDIR" mksquashfs -- /tmpdir "/LiveOS/squashfs.img" \
         -comp "${SQUASHFS_COMPRESSION}" || die "Failed to generate squashfs image"
     chmod 444 "$IMAGEDIR/LiveOS/squashfs.img"
 
     # Remove rootfs and temporary dirs, we don't need them anymore.
-    rm -rf "$ROOTFS" "$BUILDDIR/tmp-rootfs" "$BUILDDIR/tmp"
+    umount "$VOIDHOSTDIR/tmpdir"
+    umount "$VOIDHOSTDIR/LiveOS"
+    rm -rf "$ROOTFS" "$BUILDDIR/tmp-rootfs" \
+        "$BUILDDIR/tmp" \
+        "$IMAGEDIR/LiveOS" \
+        "$VOIDHOSTDIR/LiveOS" \
+        "$VOIDHOSTDIR/tmpdir"
 }
 
 generate_iso_image() {
